@@ -1,0 +1,362 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-01-09"
+---
+
+
+DESW 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(colorBlindness)
+
+sr1.full.timeseries <- read_csv("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Data.prep/Full_timeseries/May2022_Dec2023/sr1.full2022.csv", locale=locale(encoding="latin1"))
+
+sr2.full.timeseries <- read_csv("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Data.prep/Full_timeseries/May2022_Dec2023/sr2.full2022.csv", locale=locale(encoding="latin1"))
+
+sr1.full.timeseries$Timestamp <- force_tz(sr1.full.timeseries$Timestamp, "America/Blanc-Sablon")
+sr2.full.timeseries$Timestamp <- force_tz(sr2.full.timeseries$Timestamp, "America/Blanc-Sablon")
+
+sr1.full.timeseries$year <- year(sr1.full.timeseries$Timestamp)
+sr2.full.timeseries$year <- year(sr2.full.timeseries$Timestamp)
+
+#SR1 2022
+sr1.2022 <- sr1.full.timeseries %>% subset(year == "2022")
+
+#SR1 2023
+sr1.2023 <- sr1.full.timeseries %>% subset(year == "2023")
+
+#SR2 2022
+sr2.2022 <- sr2.full.timeseries %>% subset(year == "2022")
+
+#SR2 2023
+sr2.2023 <- sr2.full.timeseries %>% subset(year == "2023")
+
+cbPalette2 <- c("#009292" , "#260F99")
+
+RAL <- theme(axis.text.x = element_text(angle = 35, hjust = 1)) #rotate axis label 
+remove_bg <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
+text.bigger <- theme(text = element_text(size = 16))  
+
+rm.x <-   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+```
+
+SR1 2022
+```{r}
+sr1.2022.sub <- sr1.2022 %>% subset(Timestamp >= "2022-08-01" & Timestamp <= "2022-12-18 14:00:00") 
+
+start_timestamp <- as.POSIXct("2022-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2022-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+sr1.2022.sub <- left_join(time_sequence, sr1.2022.sub, by = "Timestamp")
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(hs.first.layer = (sr1.hs.vwc_10_cm_m3_m3 + sr1.hs.vwc_30_cm_m3_m3)*200)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(hs.second.layer = (sr1.hs.vwc_30_cm_m3_m3 + sr1.hs.vwc_50_cm_m3_m3)*200)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(hs.third.layer = (sr1.hs.vwc_50_cm_m3_m3 + sr1.hs.vwc_100_cm_m3_m3)*500)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(hs.DESW.mm = (hs.first.layer + hs.second.layer + hs.third.layer))
+
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(sb.first.layer = (sr1.sb.vwc_10_cm_m3_m3 + sr1.sb.vwc_30_cm_m3_m3)*200)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(sb.second.layer = (sr1.sb.vwc_30_cm_m3_m3 + sr1.sb.vwc_50_cm_m3_m3)*200)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(sb.third.layer = (sr1.sb.vwc_50_cm_m3_m3 + sr1.sb.vwc_100_cm_m3_m3)*500)
+
+sr1.2022.sub <- sr1.2022.sub %>%
+  mutate(sb.DESW.mm = (sb.first.layer + sb.second.layer + sb.third.layer))
+
+```
+
+SR2 2022
+```{r}
+
+sr2.2022.sub <- sr2.2022 %>% subset(Timestamp >= "2022-08-01" & Timestamp <= "2022-12-18 14:00:00") 
+
+start_timestamp <- as.POSIXct("2022-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2022-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+sr2.2022.sub <- left_join(time_sequence, sr2.2022.sub, by = "Timestamp")
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(hs.first.layer = (sr2.hs.vwc_10_cm_m3_m3 + sr2.hs.vwc_30_cm_m3_m3)*200)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(hs.second.layer = (sr2.hs.vwc_30_cm_m3_m3 + sr2.hs.vwc_50_cm_m3_m3)*200)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(hs.third.layer = (sr2.hs.vwc_50_cm_m3_m3 + sr2.hs.vwc_100_cm_m3_m3)*500)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(hs.DESW.mm = (hs.first.layer + hs.second.layer + hs.third.layer))
+
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(sb.first.layer = (sr2.sb.vwc_10_cm_m3_m3 + sr2.sb.vwc_30_cm_m3_m3)*200)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(sb.second.layer = (sr2.sb.vwc_30_cm_m3_m3 + sr2.sb.vwc_50_cm_m3_m3)*200)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(sb.third.layer = (sr2.sb.vwc_50_cm_m3_m3 + sr2.sb.vwc_100_cm_m3_m3)*500)
+
+sr2.2022.sub <- sr2.2022.sub %>%
+  mutate(sb.DESW.mm = (sb.first.layer + sb.second.layer + sb.third.layer))
+
+
+
+```
+
+SR1 2023
+```{r}
+sr1.2023.sub <- sr1.2023 %>% subset(Timestamp >= "2023-08-01" & Timestamp <= "2023-12-18 14:00:00") 
+
+start_timestamp <- as.POSIXct("2023-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2023-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+sr1.2023.sub <- left_join(time_sequence, sr1.2023.sub, by = "Timestamp")
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(hs.first.layer = (sr1.hs.vwc_10_cm_m3_m3 + sr1.hs.vwc_30_cm_m3_m3)*200)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(hs.second.layer = (sr1.hs.vwc_30_cm_m3_m3 + sr1.hs.vwc_50_cm_m3_m3)*200)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(hs.third.layer = (sr1.hs.vwc_50_cm_m3_m3 + sr1.hs.vwc_100_cm_m3_m3)*500)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(hs.DESW.mm = (hs.first.layer + hs.second.layer + hs.third.layer))
+
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(sb.first.layer = (sr1.sb.vwc_10_cm_m3_m3 + sr1.sb.vwc_30_cm_m3_m3)*200)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(sb.second.layer = (sr1.sb.vwc_30_cm_m3_m3 + sr1.sb.vwc_50_cm_m3_m3)*200)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(sb.third.layer = (sr1.sb.vwc_50_cm_m3_m3 + sr1.sb.vwc_100_cm_m3_m3)*500)
+
+sr1.2023.sub <- sr1.2023.sub %>%
+  mutate(sb.DESW.mm = (sb.first.layer + sb.second.layer + sb.third.layer))
+
+
+```
+
+SR2 2023
+```{r}
+
+sr2.2023.sub <- sr2.2023 %>% subset(Timestamp >= "2023-08-01" & Timestamp <= "2023-12-18 14:00:00") 
+
+start_timestamp <- as.POSIXct("2023-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2023-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+sr2.2023.sub <- left_join(time_sequence, sr2.2023.sub, by = "Timestamp")
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(hs.first.layer = (sr2.hs.vwc_10_cm_m3_m3 + sr2.hs.vwc_30_cm_m3_m3)*200)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(hs.second.layer = (sr2.hs.vwc_30_cm_m3_m3 + sr2.hs.vwc_50_cm_m3_m3)*200)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(hs.third.layer = (sr2.hs.vwc_50_cm_m3_m3 + sr2.hs.vwc_100_cm_m3_m3)*500)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(hs.DESW.mm = (hs.first.layer + hs.second.layer + hs.third.layer))
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(sb.first.layer = (sr2.sb.vwc_10_cm_m3_m3 + sr2.sb.vwc_30_cm_m3_m3)*200)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(sb.second.layer = (sr2.sb.vwc_30_cm_m3_m3 + sr2.sb.vwc_50_cm_m3_m3)*200)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(sb.third.layer = (sr2.sb.vwc_50_cm_m3_m3 + sr2.sb.vwc_100_cm_m3_m3)*500)
+
+sr2.2023.sub <- sr2.2023.sub %>%
+  mutate(sb.DESW.mm = (sb.first.layer + sb.second.layer + sb.third.layer))
+
+```
+
+SR1 
+```{r}
+sr1.2022.sub.vwc.hs <- sr1.2022.sub %>% select(Timestamp, hs.DESW.mm, sb.DESW.mm)
+
+sr1.2022.melted <-reshape2::melt(sr1.2022.sub.vwc.hs, id.vars = "Timestamp", variable.name = "site", value.name = "DESW.mm")
+
+sr1.2022.melted$site <- factor(sr1.2022.melted$site, levels = c("hs.DESW.mm", "sb.DESW.mm"))
+
+DESW.sr1.2022.lgnd <- ggplot(sr1.2022.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0,700) + rm.x
+
+DESW.sr1.2022.nolgnd <- ggplot(sr1.2022.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="NULL") + xlab(NULL) + ylim(0,700) + rm.x
+
+sr1.2023.sub.vwc.hs <- sr1.2023.sub %>% select(Timestamp, hs.DESW.mm, sb.DESW.mm)
+
+sr1.2023.melted <-reshape2::melt(sr1.2023.sub.vwc.hs, id.vars = "Timestamp", variable.name = "site", value.name = "DESW.mm")
+
+sr1.2023.melted$site <- factor(sr1.2023.melted$site, levels = c("hs.DESW.mm", "sb.DESW.mm"))
+
+DESW.sr1.2023.lgnd <- ggplot(sr1.2023.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0,700) + rm.x
+
+DESW.sr1.2023.nolgnd <- ggplot(sr1.2023.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="NULL") + xlab(NULL) + ylim(0,700) + rm.x
+
+
+```
+
+SR2
+```{r}
+sr2.2022.sub.vwc.hs <- sr2.2022.sub %>% select(Timestamp, hs.DESW.mm, sb.DESW.mm)
+
+sr2.2022.melted <-reshape2::melt(sr2.2022.sub.vwc.hs, id.vars = "Timestamp", variable.name = "site", value.name = "DESW.mm")
+
+sr2.2022.melted$site <- factor(sr2.2022.melted$site, levels = c("hs.DESW.mm", "sb.DESW.mm"))
+
+DESW.sr2.2022.lgnd <- ggplot(sr2.2022.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0,700) + rm.x
+
+DESW.sr2.2022.nolgnd <- ggplot(sr2.2022.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="none") + xlab(NULL) + ylim(0,700) + rm.x
+
+
+sr2.2023.sub.vwc.hs <- sr2.2023.sub %>% select(Timestamp, hs.DESW.mm, sb.DESW.mm)
+
+sr2.2023.melted <-reshape2::melt(sr2.2023.sub.vwc.hs, id.vars = "Timestamp", variable.name = "site", value.name = "DESW.mm")
+
+sr2.2023.melted$site <- factor(sr2.2023.melted$site, levels = c("hs.DESW.mm", "sb.DESW.mm"))
+
+DESW.sr2.2023.lgnd <- ggplot(sr2.2023.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0,700) + rm.x
+
+DESW.sr2.2023.nolgnd <- ggplot(sr2.2023.melted, aes(x = Timestamp, y = DESW.mm, color = site)) +
+  geom_line(size = 1) +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = "DESW (mm)") + 
+  scale_color_manual(name = NULL, labels = c("Hillside", "Streambank"),values = cbPalette2) +
+  theme(legend.position="NULL") + xlab(NULL) + ylim(0,700) + rm.x
+
+```
+
+Save final plots 
+```{r}
+DESW.sr1.2022.lgnd
+DESW.sr1.2022.nolgnd
+
+DESW.sr2.2022.lgnd
+DESW.sr2.2022.nolgnd
+
+DESW.sr1.2023.lgnd
+DESW.sr1.2023.nolgnd
+
+DESW.sr2.2023.lgnd
+DESW.sr2.2023.nolgnd
+
+
+plots.desw <- list(DESW.sr1.2022.lgnd = DESW.sr1.2022.lgnd, DESW.sr1.2022.nolgnd = DESW.sr1.2022.nolgnd, DESW.sr2.2022.lgnd = DESW.sr2.2022.lgnd, DESW.sr2.2022.nolgnd = DESW.sr2.2022.nolgnd, DESW.sr1.2023.lgnd = DESW.sr1.2023.lgnd , DESW.sr1.2023.nolgnd = DESW.sr1.2023.nolgnd, DESW.sr2.2023.lgnd= DESW.sr2.2023.lgnd, DESW.sr2.2023.nolgnd = DESW.sr2.2023.nolgnd)
+
+
+
+for (i in seq_along(plots.desw)) {
+  plot_obj <- plots.desw[[i]]  # Extract the plot
+  
+  # Create file name and full file path separately
+  file_name <- paste0(names(plots.desw)[i], ".rds")
+  full_file_path <- paste0("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/DESW_plots/", file_name)
+  
+  # Save plot object as .rda using the full file path
+  save(plot_obj, file = full_file_path)
+}
+
+
+for (i in seq_along(plots.desw)) {
+  plot_obj <- plots.desw[[i]]  # Extract the plot
+  
+  # Create file name and full file path separately
+  file_name <- paste0(names(plots.desw)[i], ".jpeg")
+  full_file_path <- paste0("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/DESW_plots/", file_name)
+  
+  # Save plot object as .rda using the full file path
+  ggsave(plot_obj, file = full_file_path)
+}
+```
+
+```{r}
+summary(sr1.2022.sub) 
+summary(sr1.2023.sub)
+```
+
