@@ -1,0 +1,629 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-12-28"
+---
+
+Whole timeseries plots - data added 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(colorBlindness)
+
+RAL <- theme(axis.text.x = element_text(angle = 35, hjust = 1)) #rotate axis label 
+remove_bg <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
+text.bigger <- theme(text = element_text(size = 16))  
+
+cbPalette2 <- c(  "#990F0F" ,  "#2C85B2"   ,"#009292" , "#260F99")
+
+sr1.full.timeseries <- read_csv("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Data.prep/Full_timeseries/May2022_Dec2023/sr1.full2022.csv", locale=locale(encoding="latin1"))
+
+sr1.full.timeseries$Timestamp <- as.POSIXct(strptime(sr1.full.timeseries$Timestamp, format = "%m/%d/%Y %H:%M"), tz = "America/Blanc-Sablon")
+
+sr2.full.timeseries <- read_csv("C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Data.prep/Full_timeseries/May2022_Dec2023/sr2.full2022.csv", locale=locale(encoding="latin1"))
+
+
+sr1.full.timeseries$Timestamp <- force_tz(sr1.full.timeseries$Timestamp, "America/Blanc-Sablon")
+sr2.full.timeseries$Timestamp <- force_tz(sr2.full.timeseries$Timestamp, "America/Blanc-Sablon")
+
+sr1.full.timeseries$year <- year(sr1.full.timeseries$Timestamp)
+sr2.full.timeseries$year <- year(sr2.full.timeseries$Timestamp)
+
+#SR1 2022
+sr1.2022 <- sr1.full.timeseries %>% subset(year == "2022")
+nrow(sr1.2022)
+
+#SR1 2023
+sr1.2023 <- sr1.full.timeseries %>% subset(year == "2023")
+nrow(sr1.2023)
+#SR2 2022
+sr2.2022 <- sr2.full.timeseries %>% subset(year == "2022")
+nrow(sr2.2022)
+#SR2 2023
+sr2.2023 <- sr2.full.timeseries %>% subset(year == "2023")
+nrow(sr2.2023)
+
+#remove x axis 
+rm.x <-   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+RAINFALL DELINEATION
+```{r}
+
+sr1.delin <- read_csv("C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Rainfall.delineation/SR1.rainfall.delineation.csv")
+
+sr1.delin$year <- year(sr1.delin$Starting)
+sr1.delin$year <- year(sr1.delin$Starting)
+
+sr1.delin.2022 <- sr1.delin %>% subset(year == "2022")
+sr1.delin.2023 <- sr1.delin %>% subset(year == "2023")
+
+sr2.delin <- read_csv("C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Rainfall.delineation/sr2.rainfall.delineation.csv")
+
+sr2.delin$year <- year(sr2.delin$Starting)
+sr2.delin$year <- year(sr2.delin$Starting)
+
+sr2.delin.2022 <- sr2.delin %>% subset(year == "2022")
+sr2.delin.2023 <- sr2.delin %>% subset(year == "2023")
+
+
+sr1.sept.2022 <- sr1.delin.2022[1,]
+```
+Mins and maxes 
+```{r}
+min_date.2022 <- min(sr1.2022.sub$Timestamp)
+max_date.2022 <- max(sr1.2022.sub$Timestamp)
+
+min_date <- min(sr1.2023.sub$Timestamp)
+max_date <- max(sr1.2023.sub$Timestamp)
+
+min(sr1.2022.sub$Timestamp)
+max(sr1.2022.sub$Timestamp)
+
+min(sr2.2023.sub$Timestamp)
+max(sr2.2023.sub$Timestamp)
+
+min(sr2.2022.sub$Timestamp)
+max(sr2.2022.sub$Timestamp)
+
+
+
+max(sr1.2022.sub$Precipitation_mm)
+max(sr1.2023.sub$Precipitation_mm, na.rm = T)
+
+
+max(sr2.2022.sub$Precipitation_mm, na.rm = T)
+max(sr2.2023.sub$Precipitation_mm, na.rm = T)
+
+
+max(sr1.2022.sub$Discharge_m3_s) #.559
+max(sr1.2023.sub$Discharge_m3_s, na.rm = T) #37.2
+
+
+max(sr2.2022.sub$Discharge_m3_s, na.rm = T) #5.43
+max(sr2.2023.sub$Discharge_m3_s, na.rm = T) #2.03
+
+
+max(sr1.2022.sub$sr1.hs.vwc_10_cm_m3_m3) #.559
+max(sr1.2023.sub$sr1.hs.vwc_10_cm_m3_m3, na.rm = T) #37.2
+
+
+max(sr2.2022.sub$Discharge_m3_s, na.rm = T) #5.43
+max(sr2.2023.sub$Discharge_m3_s, na.rm = T) #2.03
+```
+
+
+SR1 2022
+```{r}
+sr1.2022.sub <- sr1.2022 %>% subset(Timestamp >= "2022-08-01" & Timestamp <= "2022-12-18 14:00:00") 
+
+start_timestamp <- as.POSIXct("2022-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2022-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+
+sr1.2022.sub <- left_join(time_sequence, sr1.2022.sub, by = "Timestamp")
+
+#PRECIP
+#need to make precip hourly or daily 
+
+sr1.2022.sub.precip.daily <- sr1.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Rainfall_mm = sum(Precipitation_mm))
+
+#precip daily 
+sr1.d.rain.2022 <- ggplot(data = sr1.2022.sub.precip.daily, aes(x = Timestamp, y = Rainfall_mm)) + geom_col()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = "Daily rainfall (mm)") + remove_bg + text.bigger + scale_y_reverse() + xlab(NULL) + ylim(250,0) + rm.x
+
+#ggsave(plot = sr1.d.rain.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.rain.2022.jpg", width = 9, height = 2)
+
+sr1.2022.sub$Discharge_m3_s [sr1.2022.sub$Discharge_m3_s < 0.01] <- 0
+
+
+#DISCHARGE
+#sr1 2022
+sr1.d.discharge.2022 <- ggplot(data = sr1.2022.sub, aes(x = Timestamp, y = Discharge_m3_s)) + geom_line()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = bquote('Discharge ('~m^3/sec~')')) + remove_bg + text.bigger + xlab(NULL) + ylim(0,.6) + rm.x 
+
+#ggsave(plot = sr1.d.discharge.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.discharge.2022.jpg", width = 9, height = 3)
+
+#VWC
+sr1.2022.sub.vwc.hs <- sr1.2022.sub %>% select(Timestamp, sr1.hs.vwc_10_cm_m3_m3, sr1.hs.vwc_30_cm_m3_m3, sr1.hs.vwc_50_cm_m3_m3, sr1.hs.vwc_100_cm_m3_m3)
+
+sr1.2022.sub.vwc.melted.hs <-reshape2::melt(sr1.2022.sub.vwc.hs, id.vars = "Timestamp", variable.name = "Depth", value.name = "Hillside_VWC")
+
+sr1.d.hs.2022 <- ggplot(sr1.2022.sub.vwc.melted.hs , aes(x = Timestamp, y = Hillside_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('HS VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + rm.x + ylim(0.1,.45) + theme(legend.position="none")
+
+#ggsave(plot = sr1.d.hs.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.hs.2022.jpg", width = 9, height = 3)
+
+sr1.2022.sub.vwc <- sr1.2022.sub %>% select(Timestamp, sr1.sb.vwc_10_cm_m3_m3, sr1.sb.vwc_30_cm_m3_m3, sr1.sb.vwc_50_cm_m3_m3, sr1.sb.vwc_100_cm_m3_m3)
+
+sr1.2022.sub.vwc.melted <-reshape2::melt(sr1.2022.sub.vwc, id.vars = "Timestamp", variable.name = "Depth", value.name = "Streambank_VWC")
+
+sr1.d.sb.2022 <- ggplot(sr1.2022.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="none") + xlab(NULL) + ylim(0.1,.45)
+
+
+#ggsave(plot = sr1.d.sb.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.sb.2022.jpg", width = 9, height = 3)
+
+#saving all plots except for discharge 
+
+saveRDS(sr1.d.rain.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.rain.2022.rds")
+
+saveRDS(sr1.d.hs.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.HS.2022.rds")
+
+saveRDS(sr1.d.sb.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.SB.2022.rds")
+
+sr1.d.sb.2022.legend <- ggplot(sr1.2022.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0.1,.45)
+
+
+saveRDS(sr1.d.sb.2022.legend, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.SB.2022.legend.rds")
+
+
+```
+
+SR2 2022
+```{r}
+
+sr2.2022.sub <- sr2.2022 %>% subset(Timestamp >= "2022-08-01" & Timestamp <= "2022-12-18 14:00:00") 
+sr2.2022.sub <- left_join(time_sequence, sr2.2022.sub, by = "Timestamp")
+
+start_timestamp <- as.POSIXct("2022-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp <- as.POSIXct("2022-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence <- seq(from = start_timestamp, to = end_timestamp, by = "15 mins")
+
+time_sequence <- as.data.frame(time_sequence)
+colnames(time_sequence)[1] <- "Timestamp"
+
+
+sr2.2022.sub <- left_join(time_sequence, sr2.2022.sub, by = "Timestamp")
+
+#PRECIP
+#need to make precip hourly or daily 
+
+sr2.2022.sub.precip.daily <- sr2.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Rainfall_mm = sum(Precipitation_mm))
+
+#precip daily 
+sr2.d.rain.2022 <- ggplot(data = sr2.2022.sub.precip.daily, aes(x = Timestamp, y = Rainfall_mm)) + geom_col()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = "Daily rainfall (mm)") + remove_bg + text.bigger + scale_y_reverse() + xlab(NULL) + ylim(250,0) + rm.x
+
+#ggsave(plot = sr2.d.rain.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.rain.2022.jpg", width = 9, height = 2)
+
+#DISCHARGE
+#sr2 2022
+sr2.2022.sub$Discharge_m3_s [sr2.2022.sub$Discharge_m3_s < 0.01] <- 0
+
+sr2.d.discharge.2022 <- ggplot(data = sr2.2022.sub, aes(x = Timestamp, y = Discharge_m3_s)) + geom_line()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = bquote('Discharge ('~m^3/sec~')')) + remove_bg + text.bigger + xlab(NULL) + ylim(0,6) + rm.x 
+
+#ggsave(plot = sr2.d.discharge.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.discharge.2022.jpg", width = 9, height = 3)
+
+#VWC
+sr2.2022.sub.vwc.hs <- sr2.2022.sub %>% select(Timestamp, sr2.hs.vwc_10_cm_m3_m3, sr2.hs.vwc_30_cm_m3_m3, sr2.hs.vwc_50_cm_m3_m3, sr2.hs.vwc_100_cm_m3_m3)
+
+sr2.2022.sub.vwc.melted.hs <-reshape2::melt(sr2.2022.sub.vwc.hs, id.vars = "Timestamp", variable.name = "Depth", value.name = "Hillside_VWC")
+
+sr2.d.hs.2022 <- ggplot(sr2.2022.sub.vwc.melted.hs , aes(x = Timestamp, y = Hillside_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('HS VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0.1,.45) + rm.x + theme(legend.position="none")
+
+#ggsave(plot = sr2.d.hs.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.hs.2022.jpg", width = 9, height = 3)
+
+sr2.2022.sub.vwc <- sr2.2022.sub %>% select(Timestamp, sr2.sb.vwc_10_cm_m3_m3, sr2.sb.vwc_30_cm_m3_m3, sr2.sb.vwc_50_cm_m3_m3, sr2.sb.vwc_100_cm_m3_m3)
+
+sr2.2022.sub.vwc.melted <-reshape2::melt(sr2.2022.sub.vwc, id.vars = "Timestamp", variable.name = "Depth", value.name = "Streambank_VWC")
+
+sr2.d.sb.2022 <- ggplot(sr2.2022.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="none") + xlab(NULL) + ylim(0.1,.45)
+
+#ggsave(plot = sr2.d.sb.2022, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.sb.2022.jpg", width = 9, height = 3)
+
+saveRDS(sr2.d.rain.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.rain.2022.rds")
+
+saveRDS(sr2.d.hs.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.HS.2022.rds")
+
+saveRDS(sr2.d.sb.2022, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.SB.2022.rds")
+
+sr2.d.sb.2022.legend <- ggplot(sr2.2022.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0.1,.45)
+
+
+saveRDS(sr2.d.sb.2022.legend, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.SB.2022.legend.rds")
+
+```
+
+SR1 2023 
+```{r}
+sr1.2023.sub <- sr1.2023 %>% subset(Timestamp >= "2023-08-01" & Timestamp <= "2023-12-18 14:00:00") 
+
+start_timestamp.23 <- as.POSIXct("2023-08-01 00:00:00", tz = "America/Blanc-Sablon")
+end_timestamp.23 <- as.POSIXct("2023-12-18 14:00:00", tz = "America/Blanc-Sablon")
+
+# Create a time sequence with 15-minute intervals
+time_sequence.23 <- seq(from = start_timestamp.23, to = end_timestamp.23, by = "15 mins")
+
+time_sequence.23 <- as.data.frame(time_sequence.23)
+colnames(time_sequence.23)[1] <- "Timestamp"
+
+
+sr1.2023.sub <- left_join(time_sequence.23, sr1.2023.sub, by = "Timestamp")
+
+
+#PRECIP
+#need to make precip hourly or daily 
+
+sr1.2023.sub.precip.daily <- sr1.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Rainfall_mm = sum(Precipitation_mm))
+
+#precip daily 
+sr1.d.rain.2023 <- ggplot(data = sr1.2023.sub.precip.daily, aes(x = Timestamp, y = Rainfall_mm)) + geom_col()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = "Daily rainfall (mm)") + remove_bg + text.bigger + scale_y_reverse() + xlab(NULL) + ylim(250,0) + rm.x
+
+#ggsave(plot = sr1.d.rain.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.rain.2023.jpg", width = 9, height = 2)
+
+#DISCHARGE
+sr1.2023.sub$Discharge_m3_s [sr1.2023.sub$Discharge_m3_s < 0.01] <- 0
+
+#sr1 2023
+sr1.d.discharge.2023 <- ggplot(data = sr1.2023.sub, aes(x = Timestamp, y = Discharge_m3_s)) + geom_line()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = bquote('Discharge ('~m^3/sec~')')) + remove_bg + text.bigger + xlab(NULL) + rm.x 
+
+#ggsave(plot = sr1.d.discharge.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.discharge.2023.jpg", width = 9, height = 3)
+
+#VWC
+sr1.2023.sub.vwc.hs <- sr1.2023.sub %>% select(Timestamp, sr1.hs.vwc_10_cm_m3_m3, sr1.hs.vwc_30_cm_m3_m3, sr1.hs.vwc_50_cm_m3_m3, sr1.hs.vwc_100_cm_m3_m3)
+
+sr1.2023.sub.vwc.melted.hs <-reshape2::melt(sr1.2023.sub.vwc.hs, id.vars = "Timestamp", variable.name = "Depth", value.name = "Hillside_VWC")
+
+sr1.d.hs.2023 <- ggplot(sr1.2023.sub.vwc.melted.hs , aes(x = Timestamp, y = Hillside_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('HS VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + rm.x + ylim(0.1,.45) + theme(legend.position="none")
+
+#ggsave(plot = sr1.d.hs.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.hs.2023.jpg", width = 9, height = 3)
+
+sr1.2023.sub.vwc <- sr1.2023.sub %>% select(Timestamp, sr1.sb.vwc_10_cm_m3_m3, sr1.sb.vwc_30_cm_m3_m3, sr1.sb.vwc_50_cm_m3_m3, sr1.sb.vwc_100_cm_m3_m3)
+
+sr1.2023.sub.vwc.melted <-reshape2::melt(sr1.2023.sub.vwc, id.vars = "Timestamp", variable.name = "Depth", value.name = "Streambank_VWC")
+
+sr1.d.sb.2023 <- ggplot(sr1.2023.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="none") + xlab(NULL) + ylim(0.1,.45)
+
+#ggsave(plot = sr1.d.sb.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.sb.2023.jpg", width = 9, height = 3)
+
+saveRDS(sr1.d.rain.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.d.rain.2023.rds")
+
+saveRDS(sr1.d.hs.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.HS.2023.rds")
+
+saveRDS(sr1.d.sb.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.SB.2023.rds")
+
+sr1.d.sb.2023.legend <- ggplot(sr1.2023.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0.1,.45)
+
+
+saveRDS(sr1.d.sb.2023.legend, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr1.SB.2023.legend.rds")
+
+```
+
+SR2 2023 
+```{r}
+sr2.2023.sub <- sr2.2023 %>% subset(Timestamp >= "2023-08-01" & Timestamp <= "2023-12-18 14:00:00") 
+
+
+sr2.2023.sub <- left_join(time_sequence.23, sr2.2023.sub, by = "Timestamp")
+
+#PRECIP
+#need to make precip hourly or daily 
+
+sr2.2023.sub.precip.daily <- sr2.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Rainfall_mm = sum(Precipitation_mm))
+
+#precip daily 
+sr2.d.rain.2023 <- ggplot(data = sr2.2023.sub.precip.daily, aes(x = Timestamp, y = Rainfall_mm)) + geom_col()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = "Daily rainfall (mm)") + remove_bg + text.bigger + scale_y_reverse() + xlab(NULL) + ylim(250,0) + rm.x
+
+#ggsave(plot = sr2.d.rain.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.rain.2023.jpg", width = 9, height = 2)
+
+#DISCHARGE
+#sr2 2023
+
+sr2.2023.sub$Discharge_m3_s [sr2.2023.sub$Discharge_m3_s < 0.01] <- 0
+
+sr2.d.discharge.2023 <- ggplot(data = sr2.2023.sub, aes(x = Timestamp, y = Discharge_m3_s)) + geom_line()  +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + RAL + 
+  labs(y = bquote('Discharge ('~m^3/sec~')')) + remove_bg + text.bigger + xlab(NULL)  + rm.x 
+
+#ggsave(plot = sr2.d.discharge.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.discharge.2023.jpg", width = 9, height = 3)
+
+#VWC
+sr2.2023.sub.vwc.hs <- sr2.2023.sub %>% select(Timestamp, sr2.hs.vwc_10_cm_m3_m3, sr2.hs.vwc_30_cm_m3_m3, sr2.hs.vwc_50_cm_m3_m3, sr2.hs.vwc_100_cm_m3_m3)
+
+sr2.2023.sub.vwc.melted.hs <-reshape2::melt(sr2.2023.sub.vwc.hs, id.vars = "Timestamp", variable.name = "Depth", value.name = "Hillside_VWC")
+
+sr2.d.hs.2023 <- ggplot(sr2.2023.sub.vwc.melted.hs , aes(x = Timestamp, y = Hillside_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "2 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('HS VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + rm.x + ylim(0.1,.45) + theme(legend.position="none")
+
+#ggsave(plot = sr2.d.hs.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.hs.2023.jpg", width = 9, height = 3)
+
+sr2.2023.sub.vwc <- sr2.2023.sub %>% select(Timestamp, sr2.sb.vwc_10_cm_m3_m3, sr2.sb.vwc_30_cm_m3_m3, sr2.sb.vwc_50_cm_m3_m3, sr2.sb.vwc_100_cm_m3_m3)
+
+sr2.2023.sub.vwc.melted <-reshape2::melt(sr2.2023.sub.vwc, id.vars = "Timestamp", variable.name = "Depth", value.name = "Streambank_VWC")
+
+sr2.d.sb.2023 <- ggplot(sr2.2023.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') + 
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="none") + xlab(NULL) + ylim(0.1,.45)
+
+#ggsave(plot = sr2.d.sb.2023, filename = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.sb.2023.jpg", width = 9, height = 3)
+
+saveRDS(sr2.d.rain.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.d.rain.2023.rds")
+
+saveRDS(sr2.d.hs.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.HS.2023.rds")
+
+saveRDS(sr2.d.sb.2023, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.SB.2023.rds")
+
+sr2.d.sb.2023.legend <- ggplot(sr2.2023.sub.vwc.melted , aes(x = Timestamp, y = Streambank_VWC, color = Depth)) +
+  geom_line() +
+  theme_bw() + scale_x_datetime(date_breaks = "4 weeks", date_labels = '%m-%d-%y') +
+  RAL + remove_bg + text.bigger + labs(y = bquote('SB VWC ('~m^3/m^3~')')) + 
+  scale_color_manual(name = "Depth", labels = c('10cm','30cm','50cm', '100cm'),values = cbPalette2) +
+  theme(legend.position="bottom") + xlab(NULL) + ylim(0.1,.45)
+
+
+saveRDS(sr2.d.sb.2023.legend, file = "C:/Users/900115624/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/sr2.SB.2023.legend.rds")
+
+```
+
+```{r}
+min(sr1.2022.sub$Discharge_m3_s)
+max(sr1.2022.sub$Discharge_m3_s)
+
+min(sr1.2023.sub$Discharge_m3_s, na.rm = T)
+max(sr1.2023.sub$Discharge_m3_s, na.rm = T)
+
+min(sr1.2022.sub$Discharge_m3_s, na.rm = T)
+max(sr1.2022.sub$Discharge_m3_s, na.rm = T)
+
+
+min(sr2.2023.sub$Discharge_m3_s, na.rm = T)
+max(sr2.2023.sub$Discharge_m3_s, na.rm = T)
+
+
+```
+
+SAVING PRECIP PLOTS
+```{r}
+saveRDS(sr1.d.rain.2022, file = "C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/whole_ts_rainfall/sr1.rain.2022.rds")
+
+saveRDS(sr2.d.rain.2022, file = "C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/whole_ts_rainfall/sr2.rain.2022.rds")
+
+saveRDS(sr1.d.rain.2023, file = "C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/whole_ts_rainfall/sr1.rain.2023.rds")
+
+saveRDS(sr2.d.rain.2023, file = "C:/Users/britl/Dropbox/UVI post doc/Nutrients_manuscript/Analysis/Figures/whole_ts_rainfall/sr2.rain.2023.rds")
+
+
+
+
+```
+
+
+Combining plots vertically 
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(cowplot)
+
+combined_plot.sr1.2022 <- plot_grid(
+  sr1.d.rain.2022, sr1.d.discharge.2022, sr1.d.hs.2022, sr1.d.sb.2022,
+  ncol = 1, label_size = 10, align = "v", rel_heights = c(1.5, 2, 2, 2.75), vjust = .1
+)
+
+ggsave("sr1.2022.combined_plot.png", combined_plot.sr1.2022, height = 10, width = 8)
+
+
+combined_plot.sr1.2023 <- plot_grid(
+  sr1.d.rain.2023, sr1.d.discharge.2023, sr1.d.hs.2023, sr1.d.sb.2023,
+  ncol = 1, label_size = 10, align = "v", rel_heights = c(1.5, 2, 2, 2.75), vjust = .1
+)
+
+ggsave("sr1.2023.combined_plot.png", combined_plot.sr1.2023, height = 10, width = 8)
+
+
+combined_plot.sr2.2022 <- plot_grid(
+  sr2.d.rain.2022, sr2.d.discharge.2022, sr2.d.hs.2022, sr2.d.sb.2022,
+  ncol = 1, label_size = 10, align = "v", rel_heights = c(1.5, 2, 2, 2.75), vjust = .1
+)
+
+ggsave("sr2.2022.combined_plot.png", combined_plot.sr2.2022, height = 10, width = 8)
+
+
+combined_plot.sr2.2023 <- plot_grid(
+  sr2.d.rain.2023, sr2.d.discharge.2023, sr2.d.hs.2023, sr2.d.sb.2023,
+  ncol = 1, label_size = 10, align = "v", rel_heights = c(1.5, 2, 2, 2.75), vjust = .1
+)
+
+ggsave("sr2.2023.combined_plot.png", combined_plot.sr2.2023, height = 10, width = 8)
+
+
+
+```
+
+zoomed in plot for SR1 2022 - oct 1 to nov 15 ?
+```{r}
+
+sr1.2022.sub.zoom <- sr1.2022 %>% subset(Timestamp >= "2022-10-01" & Timestamp <= "2022-11-15") 
+
+sr1.d.discharge.2022.zoom <- ggplot(data = sr1.2022.sub.zoom, aes(x = Timestamp, y = Discharge_m3_s)) + geom_line()  +
+  theme_bw() + scale_x_datetime(date_breaks = "1 week", date_labels = '%m-%d-%y') + 
+  labs(y = NULL) + remove_bg + text.bigger + xlab(NULL) + ylim(0,0.6)
+
+
+ggsave(filename = "sr1.2022.discharge.zoom.jpg", plot = sr1.d.discharge.2022.zoom, width = 7, height = 2.5)
+```
+
+summary stats
+```{r}
+sum(sr1.2022.sub$Precipitation_mm) 
+
+sum(sr2.2022.sub$Precipitation_mm)
+
+sum(sr1.2023.sub$Precipitation_mm, na.rm = T)
+
+sum(sr2.2023.sub$Precipitation_mm)
+
+sr1.2022.sub.precip.hourly <- sr1.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 hour")) %>% 
+                            dplyr::summarize(Rainfall_mm_hourly = sum(Precipitation_mm))
+
+mean(sr1.2022.sub.precip.daily$Rainfall_mm, na.rm = T)
+mean(sr1.2023.sub.precip.daily$Rainfall_mm, na.rm = T)
+
+max(sr1.2022.sub.precip.daily$Rainfall_mm, na.rm = T)
+max(sr1.2023.sub.precip.daily$Rainfall_mm, na.rm = T)
+
+
+sr2.2022.sub.precip.hourly <- sr2.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 hour")) %>% 
+                            dplyr::summarize(Rainfall_mm_hourly = sum(Precipitation_mm))
+
+sr1.2023.sub.precip.hourly <- sr1.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 hour")) %>% 
+                            dplyr::summarize(Rainfall_mm_hourly = sum(Precipitation_mm))
+
+
+sr2.2023.sub.precip.hourly <- sr2.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 hour")) %>% 
+                            dplyr::summarize(Rainfall_mm_hourly = sum(Precipitation_mm))
+
+
+
+summary(sr1.2022.sub)
+summary(sr2.2022.sub)
+
+summary(sr1.2023.sub)
+summary(sr2.2023.sub)
+
+#days without flow 
+
+sr1.2022.sub.discharge.daily <- sr1.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Discharge_daily = mean(Discharge_m3_s))
+
+nrow(sr1.2022.sub.discharge.daily)
+
+sr2.2022.sub.discharge.daily <- sr2.2022.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Discharge_daily = mean(Discharge_m3_s))
+
+nrow(sr2.2022.sub.discharge.daily)
+sr1.2023.sub.discharge.daily <- sr1.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Discharge_daily = mean(Discharge_m3_s))
+
+nrow(sr1.2023.sub.discharge.daily)
+
+sr2.2023.sub.discharge.daily <- sr2.2023.sub %>% group_by(Timestamp = floor_date(Timestamp, unit="1 day")) %>% 
+                            dplyr::summarize(Discharge_daily = mean(Discharge_m3_s))
+
+nrow(sr1.2022.sub.discharge.daily)
+
+nrow(sr1.2023.sub.discharge.daily)
+
+
+sr1.2022.sub.discharge.daily %>%
+  filter(Discharge_daily == 0) %>%
+  summarize(count_zeros = n())
+
+sr2.2022.sub.discharge.daily %>%
+  filter(Discharge_daily == 0) %>%
+  summarize(count_zeros = n())
+
+sr1.2023.sub.discharge.daily %>%
+  filter(Discharge_daily == 0) %>%
+  summarize(count_zeros = n())
+
+sr2.2023.sub.discharge.daily %>%
+  filter(Discharge_daily == 0) %>%
+  summarize(count_zeros = n())
+
+
+
+
+
+```
+
